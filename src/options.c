@@ -77,35 +77,6 @@ static struct TdsFdwOption valid_options[] =
     { NULL,                     InvalidOid }
 };
 
-static struct TdsFdwOptionSource option_sources[] =
-{
-    { "servername",             UNSET },
-    { "language",               UNSET },
-    { "character_set",          UNSET },
-    { "port",                   UNSET },
-    { "database",               UNSET },
-    { "dbuse",                  UNSET },
-    { "sqlserver_ansi_mode",    UNSET },
-    { "tds_version",            UNSET },
-    { "msg_handler",            UNSET },
-    { "row_estimate_method",    UNSET },
-    { "use_remote_estimate",    UNSET },
-    { "fdw_startup_cost",       UNSET },
-    { "fdw_tuple_cost",         UNSET },
-    { "username",               UNSET },
-    { "password",               UNSET },
-    { "query",                  UNSET },
-    { "table",                  UNSET },
-    { "schema_name",            UNSET },
-    { "table_name",             UNSET },
-    { "row_estimate_method",    UNSET },
-    { "match_column_names",     UNSET },
-    { "use_remote_estimate",    UNSET },
-    { "local_tuple_estimate",   UNSET },
-    { "column_name",            UNSET },
-    { NULL,                     UNSET }
-};
-
 
 /* default IP address */
 
@@ -254,8 +225,6 @@ void tdsGetForeignServerOptions(List *options_list, TdsFdwOptionSet *option_set)
     {
         DefElem *def = (DefElem *) lfirst(cell);
     
-        TdsFdwOptionSourceType source = tdsGetOptionSource(def->defname);
-
         #ifdef DEBUG
             ereport(NOTICE,
                 (errmsg("Working on option %s", def->defname)
@@ -283,112 +252,53 @@ void tdsGetForeignServerOptions(List *options_list, TdsFdwOptionSet *option_set)
 
         if (strcmp(def->defname, "servername") == 0)
         {
-            if (option_set->servername && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: servername (%s)", defGetString(def))
-                    ));
-                    
             option_set->servername = defGetString(def); 
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
         
         else if (strcmp(def->defname, "language") == 0)
         {
-            if (option_set->language && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: language (%s)", defGetString(def))
-                    ));
-                    
             option_set->language = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
         
         else if (strcmp(def->defname, "character_set") == 0)
         {
-            if (option_set->character_set && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: character_set (%s)", defGetString(def))
-                    ));
-                    
             option_set->character_set = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
         
         else if (strcmp(def->defname, "port") == 0)
         {
-            if (option_set->port && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: port (%s)", defGetString(def))
-                    ));
-
             if (IsA(def->arg, Integer)) 
                 option_set->port = defGetInt32(def); 
             else
                 option_set->port = atoi(defGetString(def));
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
         
         else if (strcmp(def->defname, "database") == 0)
         {
-            if (option_set->database && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: database (%s)", defGetString(def))
-                    ));
-                    
             option_set->database = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }   
 
         else if (strcmp(def->defname, "dbuse") == 0)
         {
-            if (source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: dbuse (%s)", defGetString(def))
-                    ));
-            
             if (IsA(def->arg, Integer))
                 option_set->dbuse = defGetBoolean(def);
             else
                 parse_bool(defGetString(def), &option_set->dbuse);
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }   
 
         else if(strcmp(def->defname, "sqlserver_ansi_mode") == 0)
         {
-            if (source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: sqlserver_ansi_mode (%s)", defGetString(def))
-                    ));
-
             if (IsA(def->arg, Integer))
                 option_set->sqlserver_ansi_mode = defGetBoolean(def);
             else
                 parse_bool(defGetString(def), &option_set->sqlserver_ansi_mode);
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
 
         else if (strcmp(def->defname, "tds_version") == 0)
         {
             int tds_version_test = 0;
             
-            if (option_set->tds_version && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: database (%s)", defGetString(def))
-                    ));
-                    
             option_set->tds_version = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
             
             if (strcmp(option_set->tds_version, "4.2") == 0)
             {
@@ -446,14 +356,7 @@ void tdsGetForeignServerOptions(List *options_list, TdsFdwOptionSet *option_set)
         {
             int msg_handler_test = 0;
             
-            if (option_set->msg_handler && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: msg_handler (%s)", defGetString(def))
-                    ));
-                    
             option_set->msg_handler = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
 
             if (strcmp(option_set->msg_handler, "notice") == 0)
             {
@@ -476,34 +379,18 @@ void tdsGetForeignServerOptions(List *options_list, TdsFdwOptionSet *option_set)
         
         else if (strcmp(def->defname, "fdw_startup_cost") == 0)
         {
-            if (source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: fdw_startup_cost (%s)", defGetString(def))
-                    ));
-            
             if (IsA(def->arg, Integer))
                 option_set->fdw_startup_cost = defGetInt64(def); 
             else
                 option_set->fdw_startup_cost = atoi(defGetString(def));
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
         
         else if (strcmp(def->defname, "fdw_tuple_cost") == 0)
         {
-            if (option_set->fdw_tuple_cost && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: fdw_tuple_cost (%s)", defGetString(def))
-                    ));
-                   
             if (IsA(def->arg, Integer))
                 option_set->fdw_tuple_cost = defGetInt64(def);
             else
                 option_set->fdw_tuple_cost = atoi(defGetString(def));
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
     }
     
@@ -528,8 +415,6 @@ void tdsGetForeignServerTableOptions(List *options_list, TdsFdwOptionSet *option
     {
         DefElem *def = (DefElem *) lfirst(cell);
 
-        TdsFdwOptionSourceType source = tdsGetOptionSource(def->defname);
-        
         #ifdef DEBUG
             ereport(NOTICE,
                 (errmsg("Working on option %s", def->defname)
@@ -557,14 +442,7 @@ void tdsGetForeignServerTableOptions(List *options_list, TdsFdwOptionSet *option
     
         if (strcmp(def->defname, "row_estimate_method") == 0)
         {   
-            if (option_set->row_estimate_method && source == FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: row_estimate_method (%s)", defGetString(def))
-                    ));
-                    
             option_set->row_estimate_method = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
             
             if ((strcmp(option_set->row_estimate_method, "execute") != 0)
                 && (strcmp(option_set->row_estimate_method, "showplan_all") != 0))
@@ -578,18 +456,10 @@ void tdsGetForeignServerTableOptions(List *options_list, TdsFdwOptionSet *option
         
         else if (strcmp(def->defname, "use_remote_estimate") == 0)
         {
-            if (source >= FOREIGN_SERVER)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: use_remote_estimate (%s)", defGetString(def))
-                    ));
-            
             if (IsA(def->arg, Integer))
                 option_set->use_remote_estimate = defGetBoolean(def);
             else
                 parse_bool(defGetString(def), &option_set->use_remote_estimate);
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_SERVER);
         }
     }
     
@@ -613,8 +483,6 @@ void tdsGetForeignTableOptions(List *options_list, TdsFdwOptionSet *option_set)
     foreach (cell, options_list)
     {
         DefElem *def = (DefElem *) lfirst(cell);
-
-        TdsFdwOptionSourceType source = tdsGetOptionSource(def->defname);
 
         #ifdef DEBUG
             ereport(NOTICE,
@@ -643,51 +511,23 @@ void tdsGetForeignTableOptions(List *options_list, TdsFdwOptionSet *option_set)
         
         if (strcmp(def->defname, "query") == 0)
         {           
-            if (option_set->query && source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: query (%s)", defGetString(def))
-                    ));
-                    
             option_set->query = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
         
         else if (strcmp(def->defname, "schema_name") == 0)
         {           
-            if (option_set->schema_name && source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: schema_name (%s)", defGetString(def))
-                    ));
-                    
             option_set->schema_name = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
         
         else if (strcmp(def->defname, "table") == 0
             || strcmp(def->defname, "table_name") == 0)
         {           
-            if (option_set->table_name && source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: %s (%s)", def->defname, defGetString(def))
-                    ));
-                    
             option_set->table_name = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
     
         else if (strcmp(def->defname, "row_estimate_method") == 0)
         {   
-            if (option_set->row_estimate_method && source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: row_estimate_method (%s)", defGetString(def))
-                    ));
-                    
             option_set->row_estimate_method = defGetString(def);
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
             
             if ((strcmp(option_set->row_estimate_method, "execute") != 0)
                 && (strcmp(option_set->row_estimate_method, "showplan_all") != 0))
@@ -701,50 +541,26 @@ void tdsGetForeignTableOptions(List *options_list, TdsFdwOptionSet *option_set)
 
         else if (strcmp(def->defname, "match_column_names") == 0)
         {      
-            if (source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: match_column_names (%s)", defGetString(def))
-                    ));
-
             if (IsA(def->arg, Integer))
                 option_set->match_column_names = defGetBoolean(def);
             else
                 parse_bool(defGetString(def), &option_set->match_column_names);
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
         
         else if (strcmp(def->defname, "use_remote_estimate") == 0)
         {
-            if (source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: use_remote_estimate (%s)", defGetString(def))
-                    ));
-
             if (IsA(def->arg, Integer))
                 option_set->use_remote_estimate = defGetBoolean(def);
             else
                 parse_bool(defGetString(def), &option_set->use_remote_estimate);
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
         
         else if (strcmp(def->defname, "local_tuple_estimate") == 0)
         {
-            if (source == FOREIGN_TABLE)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: local_tuple_estimate (%s)", defGetString(def))
-                    ));
-
             if (IsA(def->arg, Integer)) 
                 option_set->local_tuple_estimate = defGetInt64(def);
             else
                 option_set->local_tuple_estimate = atoi(defGetString(def));
-
-            tdsUpdateOptionSource(def->defname, FOREIGN_TABLE);
         }
     }
     
@@ -796,26 +612,12 @@ void tdsGetUserMappingOptions(List *options_list, TdsFdwOptionSet *option_set)
 
         if (strcmp(def->defname, "username") == 0)
         {
-            if (option_set->username)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: username (%s)", defGetString(def))
-                    ));
-                    
             option_set->username = defGetString(def);
-            tdsUpdateOptionSource(def->defname, USER_MAPPING);
         }
         
         else if (strcmp(def->defname, "password") == 0)
         {
-            if (option_set->password)
-                ereport(ERROR,
-                    (errcode(ERRCODE_SYNTAX_ERROR),
-                        errmsg("Redundant option: password (%s)", defGetString(def))
-                    ));
-                    
             option_set->password = defGetString(def);
-            tdsUpdateOptionSource(def->defname, USER_MAPPING);
         }
     }
     
@@ -843,7 +645,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
         }
 
     sprintf(option_set->servername, "%s", DEFAULT_SERVERNAME);
-    tdsUpdateOptionSource("servername", DEFAULT);
     
     #ifdef DEBUG
         ereport(NOTICE,
@@ -860,7 +661,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
         }
 
     sprintf(option_set->row_estimate_method, "%s", DEFAULT_ROW_ESTIMATE_METHOD);
-    tdsUpdateOptionSource("row_estimate_method", DEFAULT);
 
     #ifdef DEBUG
         ereport(NOTICE,
@@ -877,7 +677,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
         }
 
     sprintf(option_set->msg_handler, "%s", DEFAULT_MSG_HANDLER);
-    tdsUpdateOptionSource("msg_handler", DEFAULT);
 
     #ifdef DEBUG
         ereport(NOTICE,
@@ -894,7 +693,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
     #endif  
 
     option_set->local_tuple_estimate = DEFAULT_LOCAL_TUPLE_ESTIMATE;
-    tdsUpdateOptionSource("local_tuple_estimate", DEFAULT);
 
     #ifdef DEBUG
         ereport(NOTICE,
@@ -903,7 +701,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
     #endif  
 
     option_set->fdw_startup_cost = DEFAULT_FDW_STARTUP_COST;
-    tdsUpdateOptionSource("fdw_startup_cost", DEFAULT);
 
     #ifdef DEBUG
         ereport(NOTICE,
@@ -912,7 +709,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
     #endif  
 
     option_set->fdw_tuple_cost = DEFAULT_FDW_TUPLE_COST;
-    tdsUpdateOptionSource("fdw_tuple_cost", DEFAULT);
    
     #ifdef DEBUG
         ereport(NOTICE,
@@ -921,7 +717,6 @@ void tdsSetDefaultOptions(TdsFdwOptionSet *option_set)
     #endif  
 
     option_set->match_column_names = DEFAULT_MATCH_COLUMN_NAMES;
-    tdsUpdateOptionSource("match_column_names", DEFAULT);
 
     #ifdef DEBUG
         ereport(NOTICE,
@@ -1007,34 +802,6 @@ bool tdsIsValidOption(const char *option, Oid context)
     #endif
     
     return false;
-}
-
-TdsFdwOptionSourceType tdsGetOptionSource(char *optname)
-{
-   TdsFdwOptionSource* current_option_source;
-
-    for (current_option_source = option_sources; current_option_source->optname; current_option_source++)
-    {
-         if (strcmp(optname, current_option_source->optname) == 0)
-         {
-             return current_option_source->source;
-         }
-    }
-    return UNSET;
-}
-
-void tdsUpdateOptionSource(char *optname, TdsFdwOptionSourceType source)
-{
-   TdsFdwOptionSource* current_option_source;
-
-    for (current_option_source = option_sources; current_option_source->optname; current_option_source++)
-    {
-         if (strcmp(optname, current_option_source->optname) == 0)
-         {
-             current_option_source->source = source;
-             break;
-         }
-    }
 }
 
 /* initialize the option set */
